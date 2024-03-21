@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}DRR{% endblock %}
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{% static 'scss/home.css' %}">
+<script src="{% static 'js/home.js' %}"></script>
+
+<nav class="navbar fixed-top navbar-expand-lg navbar-light" style="width:100vw;">
+  <div class="container">
+      <a class="navbar-brand" href="#">Data Redundanct Removal System</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item active">
+            <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Pricing</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link disabled" href="#">Disabled</a>
+          </li>
+        </ul>
+      </div>
+      <div class="dropdown">
+          <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ request.session.user.firstName }} {{ request.session.user.lastName }}
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#">Profile</a></li>
+            <li><a class="dropdown-item" href="#" id="logout">Logout</a></li>
+          </ul>
+        </div>
+  </div>
+</nav>
+<div style="margin-top: 100px;"></div>
+<!-- File -->
+<div class="container">
+    <div class="row mt-5">
+      <div id="drop-area" class="w-100">
+        <h3>Drag & Drop Files Here</h3>
+        <p>or</p>
+        <input type="file" class="btn btn-success" id="fileInput" accept=".csv,.xlsx,.xls">
+        <div id="progress-bar">
+            <div id="upload-progress"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  const dropArea = document.getElementById('drop-area');
+  const fileInput = document.getElementById('fileInput');
+  const progressBar = document.getElementById('upload-progress');
+
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, highlight, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, unhighlight, false);
+  });
+
+  function highlight() {
+      dropArea.classList.add('highlight');
+  }
+
+  function unhighlight() {
+      dropArea.classList.remove('highlight');
+  }
+
+  dropArea.addEventListener('drop', handleDrop, false);
+
+  function handleDrop(e) {
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+          fileInput.files = files;
+          uploadFile(files[0]);
+      }
+  }
+
+  fileInput.addEventListener('change', function () {
+      uploadFile(this.files[0]);
+  });
+
+  function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      $('.spinner-border').removeClass('d-none');
+      $.ajax({
+        url: '/upload/',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        xhr: function () {
+            var xhr = new window.XMLHttpRequest();
+            xhr.upload.addEventListener("progress", function (evt) {
+                if (evt.lengthComputable) {
+                    var percentComplete = (evt.loaded / evt.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                }
+            }, false);
+            return xhr;
+        },
+        success: function (data) {
+            // Handle response from server
+            if (data.status === "success") {
+              $.ajax({
+                url: '/get_file_description/',
+                type: 'GET',
+                data: {
+                  file: file.name
+                },
+                success: function (data) {
+                  if (data.status === "success") {
+                    populateCards(data);
+                  }
+                },
+                error: function (xhr, status, error) {
+                    // Handle error
+                    console.error(error);
+                }
+              });
+            }
+        },
+        error: function (xhr, status, error) {
+            // Handle error
+            console.error(error);
+        }
+    });    
+  }
+
+  function populateCards(data) {
+    $('#file-name').text(data.data.filename);
+    $('#file-type').text(data.data.file_type);
+    $('#file-size').text(data.data.size_in_kb+" KB");
+    $('#file-rows').text(data.data.rows);
+    $('#file-columns').text(data.data.columns);
+
+
+    let columnDec = '';
+    columnDec += `<tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Null</th>
+                    <th>Unique</th>
+                  </tr>`
+    data.data.column_names.forEach((column, index) => {
+      columnDec += `<tr>
+                      <td>${column}</td>
+                      <td>
+                        ${data.data.column_types[index]}
+                      </td>
+                      <td>
+                        ${data.data.column_nulls[index]}
+                      </td>
+                      <td>
+                        ${data.data.column_unique[index]}
+                      </td>
+                    </tr>`;
+    });
+    $('#column-dec').html(columnDec);
+
+    let numericColumnDec = '';
+    numericColumnDec += `<tr>
+                    <th>Column Name</th>
+                    <th>Max</th>
+                    <th>Min</th>
+                    <th>Mean</th>
+                    <th>Median</th>
+                    <th>Mode</th>
+                    <th>Standard Deviation</th>
+                    <th>Skewness</th>
+                  </tr>`
+    data.data.numeric_columns.forEach((column, index) => {
+      numericColumnDec += `<tr>
+                      <td>${column}</td>
+                      <td>
+                        ${data.data.column_max[index]}
+                      </td>
+                      <td>
+                        ${data.data.column_min[index]}
+                      </td>
+                      <td>
+                        ${data.data.column_mean[index]}
+                      </td>
+                      <td>
+                        ${data.data.column_median[index]}
+                      </td>
+                      <td>
+                        ${data.data.column_mode[index]}
+                      </td>
+                      <td>
+                        ${data.data.column_std[index]}
+                      </td>
+                      <td>
+                        ${data.data.column_skew[index]}
+                      </td>
+                    </tr>`;
+    });
+    $('#numeric-column-dec').html(numericColumnDec);
+    $('.spinner-border').addClass('d-none');
+  }
+</script>
+
+<div class="divider my-2 border-bottom border-dark"></div>
+<!-- File tabular structure -->
+<div class="container mt-3">
+    <div class="row">
+      <div class="col-md-12 mt-3">
+          <div class="card shadow">
+              <div class="card-header" style="background-color: #00224D; color: white;">
+                  <h5>File Description</h5>
+              </div>
+              <div class="card-body">
+                  <table class="table table-bordered">
+                      <tbody>
+                        <tr>
+                            <td>File Name</td>
+                            <td>
+                              <span id="file-name"> - </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>File Type</td>
+                            <td>
+                              <span id="file-type"> - </span>
+                            </td>
+                        </tr>
+                          <tr>
+                              <td>Size</td>
+                              <td>
+                                <span id="file-size"> - </span>
+                              </td>
+                          </tr>
+                          <tr>
+                              <td>No. of Rows</td>
+                              <td>
+                                <span id="file-rows"> - </span>
+                              </td>
+                          </tr>
+                          <tr>
+                              <td>No. of Column</td>
+                              <td>
+                                <span id="file-columns"> - </span>
+                              </td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+      </div>
+      <div class="col-md-12 mt-3">
+          <div class="card shadow">
+              <div class="card-header" style="background-color: #A0153E; color: white;">
+                  <h5>Column Description</h5>
+              </div>
+              <div class="card-body">
+                  <table class="table table-bordered" id="column-dec">
+                    <div class="spinner-border text-primary d-none" role="status">
+                      <span class="sr-only"></span>
+                    </div> No data available
+                  </table>
+              </div>
+          </div>
+      </div>
+      <div class="col-md-12 mt-3">
+          <div class="card shadow">
+              <div class="card-header" style="background-color: #008DDA; color: white;">
+                  <h5>Numeric Column</h5>
+              </div>
+              <div class="card-body">
+                <table class="table table-bordered" id="numeric-column-dec">
+                    <div class="spinner-border text-primary d-none" role="status">
+                      <span class="sr-only"></span>
+                    </div> No data available
+                  </table>
+              </div>
+          </div>
+      </div>
+    </div>
+</div>
+{% endblock %}

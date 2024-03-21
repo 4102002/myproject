@@ -1,0 +1,20 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+body {
+    background-color: #f8f9fa;
+}
+.navbar {
+    background-color: #000;
+    .navbar-brand {
+        color: #fff;
+    }
+}
+.user-div {
+    .input-group-text {
+        width: 33%;
+    }
+}

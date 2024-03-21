@@ -1,0 +1,57 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+.navbar {
+  background-color: #000 !important;
+}
+.navbar .navbar-brand {
+  color: #fff !important;
+}
+
+:root {
+  --colorPrimaryNormal: #00b3bb;
+  --colorPrimaryDark: #00979f;
+  --colorPrimaryGlare: #00cdd7;
+  --colorPrimaryHalf: #80d9dd;
+  --colorPrimaryQuarter: #bfecee;
+  --colorPrimaryEighth: #dff5f7;
+  --colorPrimaryPale: #f3f5f7;
+  --colorPrimarySeparator: #f3f5f7;
+  --colorPrimaryOutline: #dff5f7;
+  --colorButtonNormal: #00b3bb;
+  --colorButtonHover: #00cdd7;
+  --colorLinkNormal: #00979f;
+  --colorLinkHover: #00cdd7;
+}
+
+body {
+  margin: 24px;
+}
+
+#drop-area {
+  border: 2px dashed #ccc;
+  border-radius: 20px;
+  width: 300px;
+  padding: 20px;
+  margin: 50px auto;
+  text-align: center;
+}
+
+#progress-bar {
+  width: 100%;
+  height: 10px;
+  background-color: #f0f0f0;
+  margin-top: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#upload-progress {
+  width: 0;
+  height: 100%;
+  background-color: #EE4266 !important;
+}/*# sourceMappingURL=home.css.map */
